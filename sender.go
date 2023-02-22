@@ -4,12 +4,12 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"strconv"
 )
-
-
 
 func sendChunk(conn net.Conn, data []byte, start, end int) error {
 	_, err := conn.Write(data[start:end])
@@ -65,23 +65,55 @@ func sendData(conn net.Conn, data []byte) error {
 	return nil
 }
 
+func handleSignal(conn net.Conn) (err error) {
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		log.Printf("Error reading request")
+		return
+	}
+
+	signal, err := strconv.Atoi(string(buf[:n]))
+	log.Printf("%d", signal)
+	if err != nil {
+		log.Printf("Received request was not a signal")
+	} else {
+		if signal == 1 {
+			response := []byte(strconv.Itoa(2))
+			if _, err = conn.Write(response); err != nil {
+				log.Printf("Error sending signal")
+				return
+			}
+		}
+	}
+	return
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	data := []byte("124")
+	// if err := handleSignal(conn); err != nil {
+	// 	data := []byte("124")
+	// 	err := sendData(conn, data)
+	// 	if err != nil {
+	// 		log.Printf("Error sending data: %v", err)
+	// 	}
+	// }
 
+	data := []byte("124")
 	err := sendData(conn, data)
 	if err != nil {
 		log.Printf("Error sending data: %v", err)
 	}
 }
 
-func startListen() {
+func StartListen() {
 	ln, err := net.Listen("tcp", ":6882")
 	if err != nil {
 		log.Fatalf("Error listening: %v", err)
 	}
 	defer ln.Close()
+	fmt.Print("Listening for leechers on port 6882")
 
 	for {
 		conn, err := ln.Accept()
