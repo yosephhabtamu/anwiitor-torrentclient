@@ -6,12 +6,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
+	"strconv"
 )
 
-func sendChunk(conn net.Conn, data []byte, start, end int) error {
-	_, err := conn.Write(data[start:end])
+func sendChunk(conn net.Conn, data []byte, start, end int, ChunkSize int) error {
+	_, err := conn.Write(data)
 	if err != nil {
 		return err
 	}
@@ -30,14 +32,14 @@ func sendChunk(conn net.Conn, data []byte, start, end int) error {
 	return nil
 }
 
-func sendData(conn net.Conn, data []byte) error {
+func sendData(conn net.Conn, data []byte, ChunkSize int) error {
 	// Send the length of the data
 	err := binary.Write(conn, binary.LittleEndian, int64(len(data)))
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < len(data); i += ChunkSize {
+	for i := 0; i < 1; i += ChunkSize {
 		j := i + ChunkSize
 		if j > len(data) {
 			j = len(data)
@@ -47,7 +49,7 @@ func sendData(conn net.Conn, data []byte) error {
 		retry := 0
 
 		for {
-			err := sendChunk(conn, data, i, j)
+			err := sendChunk(conn, data, i, j, ChunkSize)
 			if err == nil {
 				break
 			}
@@ -64,31 +66,31 @@ func sendData(conn net.Conn, data []byte) error {
 	return nil
 }
 
-// func handleSignal(conn net.Conn) (err error) {
-// 	buf := make([]byte, 1024)
-// 	n, err := conn.Read(buf)
-// 	if err != nil {
-// 		log.Printf("Error reading request")
-// 		return
-// 	}
+func handleSignal(conn net.Conn) (err error) {
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		log.Printf("Error reading request")
+		return
+	}
 
-// 	signal, err := strconv.Atoi(string(buf[:n]))
-// 	log.Printf("%d", signal)
-// 	if err != nil {
-// 		log.Printf("Received request was not a signal")
-// 	} else {
-// 		if signal == 1 {
-// 			response := []byte(strconv.Itoa(2))
-// 			if _, err = conn.Write(response); err != nil {
-// 				log.Printf("Error sending signal")
-// 				return
-// 			}
-// 		}
-// 	}
-// 	return
-// }
+	signal, err := strconv.Atoi(string(buf[:n]))
+	log.Printf("%d", signal)
+	if err != nil {
+		log.Printf("Received request was not a signal")
+	} else {
+		if signal == 1 {
+			response := []byte(strconv.Itoa(2))
+			if _, err = conn.Write(response); err != nil {
+				log.Printf("Error sending signal")
+				return
+			}
+		}
+	}
+	return
+}
 
-func handleConnection(conn net.Conn, torrentStruct Torrent) {
+func handleConnection(conn net.Conn, torrentStruct Torrent, filename string) {
 	defer conn.Close()
 
 	// if err := handleSignal(conn); err != nil {
@@ -99,14 +101,14 @@ func handleConnection(conn net.Conn, torrentStruct Torrent) {
 	// 	}
 	// }
 
-	data := make([]byte, torrentStruct.Size)
-	err := sendData(conn, data)
+	data, _ := fileToByteArray(filename)
+	err := sendData(conn, data, binary.Size(data))
 	if err != nil {
 		log.Printf("Error sending data: %v", err)
 	}
 }
 
-func StartListen(torrentStruct Torrent) {
+func StartListen(torrentStruct Torrent, filename string) {
 	ln, err := net.Listen("tcp", ":6882")
 	if err != nil {
 		log.Fatalf("Error listening: %v", err)
@@ -121,6 +123,19 @@ func StartListen(torrentStruct Torrent) {
 			continue
 		}
 
-		go handleConnection(conn, torrentStruct)
+		go handleConnection(conn, torrentStruct, filename)
 	}
+}
+
+func fileToByteArray(filename string) ([]byte, error) {
+    // Read the entire file into memory
+    fileContents, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return nil, err
+    }
+
+    // Convert the file contents to a byte array
+    byteArray := []byte(fileContents)
+
+    return byteArray, nil
 }
