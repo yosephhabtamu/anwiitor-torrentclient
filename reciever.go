@@ -7,16 +7,13 @@ import (
 	"io"
 	"log"
 	"net"
-	"sync"
 )
 
-const ChunkSize = 1000000
 const RetryLimit = 10
 
 func ReceiveChunk(conn net.Conn, data []byte, start, end int) error {
 	log.Printf("Recieve chunk")
-	_, err := io.ReadFull(conn, data[start:end])
-	log.Printf("%v", data)
+	_, err := io.ReadFull(conn, data)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,67 +28,64 @@ func ReceiveChunk(conn net.Conn, data []byte, start, end int) error {
 	return nil
 }
 
-func ReceiveData(conn net.Conn, torrentStruct Torrent) ([]byte, error) {
+func ReceiveData(conn net.Conn, ChunkSize int) ([]byte, error) {
 	// Receive the length of the data
-	dataLen := torrentStruct.Size
+	var dataLen int64
 	err := binary.Read(conn, binary.LittleEndian, &dataLen)
 	if err != nil {
 		return nil, err
 	}
 
-	data := make([]byte, dataLen)
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	data := make([]byte, ChunkSize)
+	ReceiveChunk(conn, data, 0, ChunkSize)
+	// var wg sync.WaitGroup
+	// var mu sync.Mutex
+	// log.Printf("%d", ChunkSize)
+	// log.Printf("%d", int(dataLen))
+	// for i := 0; i < ChunkSize; i += ChunkSize {
+	// 	j := (i + ChunkSize) - 1
 
-	for i := 0; i < int(dataLen); i += ChunkSize {
-		j := i + ChunkSize
-		if j > int(dataLen) {
-			j = int(dataLen)
-		}
+	// 	wg.Add(1)
+	// 	go func(i, j int) {
+	// 		defer wg.Done()
 
-		wg.Add(1)
-		go func(i, j int) {
-			defer wg.Done()
+	// 		// Keep track of the number of retries
+	// 		retry := 0
 
-			// Keep track of the number of retries
-			retry := 0
+	// 		for {
+	// 			err := ReceiveChunk(conn, data, i, j)
+	// 			if err == nil {
+	// 				break
+	// 			}
 
-			for {
-				err := ReceiveChunk(conn, data, i, j)
-				if err == nil {
-					break
-				}
+	// 			// If there was an error, check if we've reached the retry limit
+	// 			retry++
+	// 			if retry == RetryLimit {
+	// 				mu.Lock()
+	// 				defer mu.Unlock()
+	// 				log.Printf("Error receiving chunk, retry limit reached: %v", err)
+	// 				return
+	// 			}
+	// 		}
+	// 	}(i, j)
+	// }
 
-				// If there was an error, check if we've reached the retry limit
-				retry++
-				if retry == RetryLimit {
-					mu.Lock()
-					defer mu.Unlock()
-					log.Printf("Error receiving chunk, retry limit reached: %v", err)
-					return
-				}
-			}
-		}(i, j)
-	}
-
-	wg.Wait()
+	// wg.Wait()
 
 	return data, nil
 }
 
-func StartSending(torrentStruct Torrent) (data []byte, err error) {
-	conn, err := net.Dial("tcp", "192.168.1.4:6882")
+func StartSending(ChunkSize int) ([]byte, error) {
+	conn, err := net.Dial("tcp", ":6882")
 	if err != nil {
 		log.Fatalf("Error dialing: %v", err)
 	}
 	defer conn.Close()
 
-	data, err = ReceiveData(conn, torrentStruct)
-	log.Print(data)
+	data, err := ReceiveData(conn, ChunkSize)
+	
 	if err != nil {
 		log.Fatalf("Error receiving data: %v", err)
 	}
-
-	log.Printf("Received data: %s", data)
-	return
+	return data, nil
 }

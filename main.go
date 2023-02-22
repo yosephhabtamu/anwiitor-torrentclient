@@ -13,14 +13,14 @@ func main() {
 	}
 
 	if args[0] == "seed" {
-		 path,torrentStruct, err := GenerateSeeder(args[1])
+		path, torrentStruct, err := GenerateSeeder(args[1])
 		if err != nil {
 			log.Panic("seeding Failed", err)
 			return
 		}
 		log.Print("the generated torrent file is located at: \n", path)
 
-		StartListen(torrentStruct)
+		StartListen(torrentStruct, args[1])
 	}
 	if args[0] == "leech" {
 		//leech(args[1])

@@ -3,16 +3,15 @@ package main
 import (
 	// "fmt"
 	"encoding/binary"
-	// "io"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
-	// "time"
+	"time"
 )
 
-func GenerateSeeder(fileName string) (filePath string,torrentStruct Torrent, err error) {
-	torrentStruct,_, err = ReadToGenerateTorrentFile(fileName)
+func GenerateSeeder(fileName string) (filePath string, torrentStruct Torrent, err error) {
+	_, torrentStruct, err = ReadToGenerateTorrentFile(fileName)
 	if err != nil {
 		log.Panic("error generating the torrent file", err)
 	}
@@ -44,17 +43,17 @@ func CheckAvailability(conn net.Conn) (signal int, err error) {
 	return
 }
 
-// func awaitChoke() {
-// 	time.Sleep(5 * time.Minute)
-// }
+func awaitChoke() {
+	time.Sleep(5 * time.Minute)
+}
 
-func ManageLeech(torrentFile string) (torrentStruct Torrent, err error) {
+func ManageLeech(torrentFile string) (TorrentStruct Torrent, err error) {
 	var file *os.File
-	torrentStruct, err = MyUnmarshall(torrentFile)
+	TorrentStruct, err = MyUnmarshall(torrentFile)
 	if err != nil {
 		log.Panic("error unmarshalling torrent file", err)
 	}
-	file, err = OpenExistingFile(torrentStruct.Name)
+	file, err = OpenExistingFile(TorrentStruct.Name)
 	if err != nil {
 		log.Fatal("error handling file")
 	}
@@ -84,21 +83,20 @@ func ManageLeech(torrentFile string) (torrentStruct Torrent, err error) {
 
 	// 	//send torrent request
 	var data []byte
-		data, err = StartSending(torrentStruct)
-		log.Printf("%v", data)
-		if err != nil {
+	data, err = StartSending(int(TorrentStruct.Size))
+	if err != nil {
 
-			log.Fatal("error loading")
-		}
+		log.Fatal("error loading")
+	}
 	// 	log.Printf("%v", data)
 	// 	bufSize := torrentStruct.BufSize[0]
 	// 	if i == torrentStruct.PieceLength {
 	// 		bufSize = torrentStruct.BufSize[1]
 	// 	}
-		WriteNthPiece(file, data, 0, binary.Size(data))
+	log.Printf("%v", data)
+	WriteNthPiece(file, data, 0, binary.Size(data))
 
 	// }
-
 
 	return
 }
