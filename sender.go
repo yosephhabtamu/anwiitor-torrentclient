@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"strconv"
 )
 
 func sendChunk(conn net.Conn, data []byte, start, end int) error {
@@ -65,31 +64,31 @@ func sendData(conn net.Conn, data []byte) error {
 	return nil
 }
 
-func handleSignal(conn net.Conn) (err error) {
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		log.Printf("Error reading request")
-		return
-	}
+// func handleSignal(conn net.Conn) (err error) {
+// 	buf := make([]byte, 1024)
+// 	n, err := conn.Read(buf)
+// 	if err != nil {
+// 		log.Printf("Error reading request")
+// 		return
+// 	}
 
-	signal, err := strconv.Atoi(string(buf[:n]))
-	log.Printf("%d", signal)
-	if err != nil {
-		log.Printf("Received request was not a signal")
-	} else {
-		if signal == 1 {
-			response := []byte(strconv.Itoa(2))
-			if _, err = conn.Write(response); err != nil {
-				log.Printf("Error sending signal")
-				return
-			}
-		}
-	}
-	return
-}
+// 	signal, err := strconv.Atoi(string(buf[:n]))
+// 	log.Printf("%d", signal)
+// 	if err != nil {
+// 		log.Printf("Received request was not a signal")
+// 	} else {
+// 		if signal == 1 {
+// 			response := []byte(strconv.Itoa(2))
+// 			if _, err = conn.Write(response); err != nil {
+// 				log.Printf("Error sending signal")
+// 				return
+// 			}
+// 		}
+// 	}
+// 	return
+// }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, torrentStruct Torrent) {
 	defer conn.Close()
 
 	// if err := handleSignal(conn); err != nil {
@@ -100,14 +99,14 @@ func handleConnection(conn net.Conn) {
 	// 	}
 	// }
 
-	data := []byte("124")
+	data := make([]byte, torrentStruct.Size)
 	err := sendData(conn, data)
 	if err != nil {
 		log.Printf("Error sending data: %v", err)
 	}
 }
 
-func StartListen() {
+func StartListen(torrentStruct Torrent) {
 	ln, err := net.Listen("tcp", ":6882")
 	if err != nil {
 		log.Fatalf("Error listening: %v", err)
@@ -122,6 +121,6 @@ func StartListen() {
 			continue
 		}
 
-		go handleConnection(conn)
+		go handleConnection(conn, torrentStruct)
 	}
 }

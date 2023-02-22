@@ -3,16 +3,16 @@ package main
 import (
 	// "fmt"
 	"encoding/binary"
-	"io"
+	// "io"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
-	"time"
+	// "time"
 )
 
-func GenerateSeeder(fileName string) (filePath string, err error) {
-	_, err = ReadToGenerateTorrentFile(fileName)
+func GenerateSeeder(fileName string) (filePath string,torrentStruct Torrent, err error) {
+	torrentStruct,_, err = ReadToGenerateTorrentFile(fileName)
 	if err != nil {
 		log.Panic("error generating the torrent file", err)
 	}
@@ -44,9 +44,9 @@ func CheckAvailability(conn net.Conn) (signal int, err error) {
 	return
 }
 
-func awaitChoke() {
-	time.Sleep(5 * time.Minute)
-}
+// func awaitChoke() {
+// 	time.Sleep(5 * time.Minute)
+// }
 
 func ManageLeech(torrentFile string) (torrentStruct Torrent, err error) {
 	var file *os.File
@@ -61,29 +61,17 @@ func ManageLeech(torrentFile string) (torrentStruct Torrent, err error) {
 
 	defer file.Close()
 
-	peerIp := torrentStruct.Ip
-	if len(peerIp) == 0 {
-		log.Fatalf("No peers avaialable")
-	}
-
-	currPeer := peerIp[1]
-	log.Print(currPeer.String())
-	curr_conn, err := net.Dial("tcp", ":6882")
-	if err != nil {
-		log.Fatalf("Failed Connecting with peer")
-	}
-
-	var missingPieces []int
-	missingPieces, err = FindMissingPieces(torrentStruct, file)
-	log.Printf("%v", missingPieces)
-	if err != nil {
-		if err == io.EOF {
-			log.Print("successful missing pieces")
-			return
-		}
-		log.Panic("cant resume: ", err)
-		return
-	}
+	// var missingPieces []int
+	// missingPieces, err = FindMissingPieces(torrentStruct, file)
+	// log.Printf("%v", missingPieces)
+	// if err != nil {
+	// 	if err == io.EOF {
+	// 		log.Print("successful missing pieces")
+	// 		return
+	// 	}
+	// 	log.Panic("cant resume: ", err)
+	// 	return
+	// }
 	// for i :=1; i<=  torrentStruct.PieceLength;i+=1 {
 	// 	// seederSignal, err := CheckAvailability(curr_conn)
 	// 	// if err != nil {
@@ -96,7 +84,8 @@ func ManageLeech(torrentFile string) (torrentStruct Torrent, err error) {
 
 	// 	//send torrent request
 	var data []byte
-		data, err = ReceiveData(curr_conn)
+		data, err = StartSending(torrentStruct)
+		log.Printf("%v", data)
 		if err != nil {
 
 			log.Fatal("error loading")

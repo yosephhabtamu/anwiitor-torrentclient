@@ -95,7 +95,7 @@ func Read(filename string) (torrentStruct Torrent, err error) {
 	return
 }
 
-func ReadToGenerateTorrentFile(fileName string) (torrentFile os.File, err error) {
+func ReadToGenerateTorrentFile(fileName string) (torrentStruct Torrent, torrentFile os.File, err error) {
 	name, err := os.Hostname()
 	if err != nil {
 		log.Print("error fetching hostname", err)
@@ -118,7 +118,8 @@ func ReadToGenerateTorrentFile(fileName string) (torrentFile os.File, err error)
 	if err != nil {
 		log.Panic("error fetching ip")
 	}
-	torrentStruct, err := Read(fileName)
+
+	torrentStruct, err = Read(fileName)
 	if err != nil {
 		log.Panic("error while Reading", err)
 	}

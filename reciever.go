@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-const ChunkSize = 1024
+const ChunkSize = 1000000
 const RetryLimit = 10
 
 func ReceiveChunk(conn net.Conn, data []byte, start, end int) error {
@@ -31,9 +31,9 @@ func ReceiveChunk(conn net.Conn, data []byte, start, end int) error {
 	return nil
 }
 
-func ReceiveData(conn net.Conn) ([]byte, error) {
+func ReceiveData(conn net.Conn, torrentStruct Torrent) ([]byte, error) {
 	// Receive the length of the data
-	var dataLen int64
+	dataLen := torrentStruct.Size
 	err := binary.Read(conn, binary.LittleEndian, &dataLen)
 	if err != nil {
 		return nil, err
@@ -79,17 +79,19 @@ func ReceiveData(conn net.Conn) ([]byte, error) {
 	return data, nil
 }
 
-func StartSending() {
+func StartSending(torrentStruct Torrent) (data []byte, err error) {
 	conn, err := net.Dial("tcp", "192.168.1.4:6882")
 	if err != nil {
 		log.Fatalf("Error dialing: %v", err)
 	}
 	defer conn.Close()
 
-	data, err := ReceiveData(conn)
+	data, err = ReceiveData(conn, torrentStruct)
+	log.Print(data)
 	if err != nil {
 		log.Fatalf("Error receiving data: %v", err)
 	}
 
 	log.Printf("Received data: %s", data)
+	return
 }
