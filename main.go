@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	
+
 	args := os.Args[1:]
 	if len(args) < 2 || len(args) > 2 {
 		log.Panic("invalid argument please read the doc")
@@ -19,11 +19,12 @@ func main() {
 			return
 		}
 		log.Print("the generated torrent file is located at: \n", path)
-		go startListen()
+
+		StartListen()
 	}
 	if args[0] == "leech" {
 		//leech(args[1])
-		manageLeech(args[1])
+		ManageLeech(args[1])
 		log.Print("not now")
 	}
 	//Write("steven.mp4", "anwii.mp4")

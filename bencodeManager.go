@@ -12,7 +12,7 @@ type Torrent struct {
 	Name      string
 	Ip        []net.IP
 	InfoHash  string
-	BufSize   int
+	BufSize   []int
 	PieceLength int
 	Size      int64
 	Pieces    []map[string]string
@@ -31,7 +31,7 @@ func MyMarshall(fileName string, torrentStruct Torrent) (torrentFile os.File, er
 
 }
 
-func myUnmarshall(fileName string) (torrentStruct Torrent, err error) {
+func MyUnmarshall(fileName string) (torrentStruct Torrent, err error) {
 	file, err := os.Open(fileName)
 
 	if err != nil {

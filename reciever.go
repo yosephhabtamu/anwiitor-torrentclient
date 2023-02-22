@@ -11,12 +11,14 @@ import (
 )
 
 const ChunkSize = 1024
-const RetryLimit = 3
+const RetryLimit = 10
 
-func receiveChunk(conn net.Conn, data []byte, start, end int) error {
+func ReceiveChunk(conn net.Conn, data []byte, start, end int) error {
+	log.Printf("Recieve chunk")
 	_, err := io.ReadFull(conn, data[start:end])
+	log.Printf("%v", data)
 	if err != nil {
-		log.Fatal(err) 
+		log.Fatal(err)
 	}
 
 	// Send a confirmation to the server that the chunk was received
@@ -29,7 +31,7 @@ func receiveChunk(conn net.Conn, data []byte, start, end int) error {
 	return nil
 }
 
-func receiveData(conn net.Conn) ([]byte, error) {
+func ReceiveData(conn net.Conn) ([]byte, error) {
 	// Receive the length of the data
 	var dataLen int64
 	err := binary.Read(conn, binary.LittleEndian, &dataLen)
@@ -55,7 +57,7 @@ func receiveData(conn net.Conn) ([]byte, error) {
 			retry := 0
 
 			for {
-				err := receiveChunk(conn, data, i, j)
+				err := ReceiveChunk(conn, data, i, j)
 				if err == nil {
 					break
 				}
@@ -77,14 +79,14 @@ func receiveData(conn net.Conn) ([]byte, error) {
 	return data, nil
 }
 
-func startSending() {
+func StartSending() {
 	conn, err := net.Dial("tcp", "192.168.1.4:6882")
 	if err != nil {
 		log.Fatalf("Error dialing: %v", err)
 	}
 	defer conn.Close()
 
-	data, err := receiveData(conn)
+	data, err := ReceiveData(conn)
 	if err != nil {
 		log.Fatalf("Error receiving data: %v", err)
 	}

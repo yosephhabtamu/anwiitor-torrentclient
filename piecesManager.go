@@ -30,7 +30,7 @@ func WriteNthPiece(file *os.File, bufData []byte, n int, bufSize int) (buf []byt
 	return
 }
 
-func storePiecehash(loc int, hash string) (result map[string]string, err error) {
+func StorePiecehash(loc int, hash string) (result map[string]string, err error) {
 	result = make(map[string]string)
 	result[strconv.Itoa(loc)] = hash
 	return
